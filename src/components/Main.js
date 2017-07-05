@@ -8,7 +8,7 @@ let imageDatas = require('../data/imageDatas.json');
 
 //在原有的imageDatas单个对象上加上imgURL补全url
 imageDatas = (function genImageURL(imageDatasArr){
-  for(let i = 0; i < imageDatasArr.length;i++){
+  for(let i = 0; i < imageDatasArr.length; i++){
     let singleImageData = imageDatasArr[i];
     singleImageData.imgURL =
       require('../images/'+singleImageData.fileName);
@@ -17,7 +17,22 @@ imageDatas = (function genImageURL(imageDatasArr){
   return imageDatasArr;
 })(imageDatas);
 
+//图片组件
 let ImgFigure = React.createClass({
+
+  //imgFigure点击函数
+  handleClick(e) {
+
+    if(this.props.arrange.isCenter){
+      this.props.inverse();
+    } else {
+      this.props.center();
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+  },
+
   render() {
 
     let styleObj = {};
@@ -27,20 +42,57 @@ let ImgFigure = React.createClass({
       styleObj = this.props.arrange.pos;
     }
 
+    //如果图片的旋转角度有值并且不为0，添加旋转角度
+    if(this.props.arrange.rotate) {
+      (['-moz-','-ms-','-webkit','']).forEach((value) => {
+        styleObj[value + 'transform'] =
+          `rotate(${this.props.arrange.rotate}deg)`;
+      })
+    }
+
+    if(this.props.arrange.isCenter) {
+      styleObj.zIndex = 11;
+    }
+
+    let imgFigureClassName = 'img-figure';
+        imgFigureClassName +=
+          this.props.arrange.isInverse ? ' is-inverse' : '';
+
     return (
-      <figure className="img-figure" style={styleObj}>
+      <figure className={imgFigureClassName} style={styleObj} onClick={this.handleClick}>
         <img
           src={this.props.data.imgURL}
           alt={this.props.data.title}
         />
         <figcaption>
           <h2 className="img-title">{this.props.data.title}</h2>
+          <div className="img-back" onClick={this.handleClick}>
+            <p>
+              {this.props.data.desc}
+            </p>
+          </div>
         </figcaption>
       </figure>
     )
   }
-})
+});
 
+//控制组件
+let ControllerUnit = React.createClass({
+
+  handleClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  },
+
+  render() {
+    return (
+      <span className="controller-unit" onClick={this.handleClick}></span>
+    );
+  }
+});
+
+//舞台组件
 let Stage = React.createClass({
   Constant: {
     centerPos: {
@@ -58,59 +110,31 @@ let Stage = React.createClass({
     }
   },
 
-  getInitialState() {
-    return {
-      imgsArrangeArr: [
-        // {
-        //   pos: {
-        //     left: '0',
-        //     top: '0'
-        //   }
-        // }
-      ]
+  /*
+   * 翻转图片
+   * 输入需要翻转的图片的index值
+   * 闭包，返回真正被执行的函数
+   */
+  inverse(index) {
+    return () =>{
+      let imgsArrangeArr = this.state.imgsArrangeArr;
+
+      imgsArrangeArr[index].isInverse = !imgsArrangeArr[index].isInverse;
+
+      this.setState({
+        imgsArrangeArr: imgsArrangeArr
+      })
     }
-  },
-
-  componentDidMount() { //加载后为每张图片计算位置范围
-
-    //首先拿到舞台尺寸
-    let stageDOM = ReactDOM.findDOMNode(this.refs.stage),
-      stageW = stageDOM.scrollWidth,
-      stageH = stageDOM.scrollHeight,
-      halfStageW = Math.ceil(stageW / 2),
-      halfStageH = Math.ceil(stageH / 2);
-
-    let imgFigureDOM = ReactDOM.findDOMNode(this.refs.imgFigure0),
-        imgW = imgFigureDOM.scrollWidth,
-        imgH = imgFigureDOM.scrollHeight,
-        halfImgW = Math.ceil(imgW / 2),
-        halfImgH= Math.ceil(imgH / 2);
-
-    this.Constant.centerPos = {   //计算中心图片的位置
-      left: halfStageW - halfImgW,
-      top: halfStageH - halfImgH
-    };
-
-    //计算左侧右侧区域图片排布位置的取值范围
-    this.Constant.hPosRange.leftSecX[0] = -halfImgW;
-    this.Constant.hPosRange.leftSecX[1] = halfStageW - halfImgW * 3;
-    this.Constant.hPosRange.rightSecX[0] = halfStageW + halfImgW;
-    this.Constant.hPosRange.rightSecX[1] = stageW - halfImgW;
-    this.Constant.hPosRange.y[0] = -halfImgH;
-    this.Constant.hPosRange.y[1] = stageH - halfImgH;
-
-    //计算上侧区域图片排布位置的取值范围
-    this.Constant.vPosRange.topY[0] = -halfImgH;
-    this.Constant.vPosRange.topY[1] = halfStageH - halfImgH * 3;
-    this.Constant.vPosRange.x[0] = -halfImgW;
-    this.Constant.vPosRange.x[1] = halfImgW;
-
-    this.rearrange(0)
   },
 
   //取范围随机
   getRangeRandom(low,high) {
     return Math.ceil(Math.random() * (high - low) + low);
+  },
+
+  //获取随机旋转角度（正负30度）
+  getDegRandom() {
+    return (Math.random() >0.5?'':'-') + Math.ceil(Math.random() * 30)
   },
 
   //重新布局所有图片
@@ -134,7 +158,11 @@ let Stage = React.createClass({
       imgsArrangeCenterArr = imgsArrangeArr.splice(centerIndex,1);
 
     //首先居中centerIndex的图片
-    imgsArrangeCenterArr[0].pos = centerPos;
+    imgsArrangeCenterArr[0] ={
+      pos: centerPos,
+      rotate: 0,
+      isCenter: true
+    };
 
     //取出要布局上侧的图片状态信息
     topImgSpliceIndex = Math.ceil(
@@ -144,11 +172,15 @@ let Stage = React.createClass({
 
     //布局位于上侧的图片
     imgsArrangeTopArr.forEach((value,index) => {  //这里imgsArrangeTopArr没有值时不会进入forEach，防止报错
-      imgsArrangeTopArr[index].pos = {
-        top: this.getRangeRandom(
-          vPosRangeTopY[0],vPosRangeTopY[1]),
-        left: this.getRangeRandom(
-          vPosRangeX[0],vPosRangeX[1])
+      imgsArrangeTopArr[index] = {
+        pos: {
+          top: this.getRangeRandom(
+            vPosRangeTopY[0],vPosRangeTopY[1]),
+          left: this.getRangeRandom(
+            vPosRangeX[0],vPosRangeX[1])
+        },
+        rotate: this.getDegRandom(),
+        isCenter: false
       }
     });
 
@@ -163,11 +195,15 @@ let Stage = React.createClass({
         hPosRangeLORX = hPosRangeRightSecX;
       }
 
-      imgsArrangeArr[i].pos = {
-        top: this.getRangeRandom(hPosRangeY[0],
-          hPosRangeY[1]),
-        left: this.getRangeRandom(hPosRangeLORX[0],
-          hPosRangeLORX[1])
+      imgsArrangeArr[i] = {
+        pos: {
+          top: this.getRangeRandom(hPosRangeY[0],
+            hPosRangeY[1]),
+          left: this.getRangeRandom(hPosRangeLORX[0],
+            hPosRangeLORX[1])
+        },
+        rotate: this.getDegRandom(),
+        isCenter: false
       }
     }
 
@@ -185,6 +221,70 @@ let Stage = React.createClass({
     });
   },
 
+  /*
+   * 利用rearange函数居中对应index图片
+   * 输入需要居中的图片的index值
+   * 闭包，返回真正被执行的函数
+   */
+  center(index) {
+    return () => {
+      this.rearrange(index);
+    }
+  },
+
+  getInitialState() {
+    return {
+      imgsArrangeArr: [
+        /*{
+          pos: {
+            left: '0',
+            top: '0'
+          },
+          rotate: 0,
+          isInverse: false, //图片正反面
+          isCenter: false
+        }*/
+      ]
+    }
+  },
+
+  componentDidMount() { //加载后为每张图片计算位置范围
+
+    //首先拿到舞台尺寸
+    let stageDOM = ReactDOM.findDOMNode(this.refs.stage),
+        stageW = stageDOM.scrollWidth,
+        stageH = stageDOM.scrollHeight,
+        halfStageW = Math.ceil(stageW / 2),
+        halfStageH = Math.ceil(stageH / 2);
+
+    let imgFigureDOM = ReactDOM.findDOMNode(this.refs.imgFigure0),
+        imgW = imgFigureDOM.scrollWidth,
+        imgH = imgFigureDOM.scrollHeight,
+        halfImgW = Math.ceil(imgW / 2),
+        halfImgH= Math.ceil(imgH / 2);
+
+    this.Constant.centerPos = {   //计算中心图片的位置
+      left: halfStageW - halfImgW,
+      top: halfStageH - halfImgH
+    };
+
+    //计算左侧右侧区域图片排布位置的取值范围
+    this.Constant.hPosRange.leftSecX[0] = -halfImgW;
+    this.Constant.hPosRange.leftSecX[1] = halfStageW - halfImgW * 3;
+    this.Constant.hPosRange.rightSecX[0] = halfStageW + halfImgW;
+    this.Constant.hPosRange.rightSecX[1] = stageW - halfImgW;
+    this.Constant.hPosRange.y[0] = -halfImgH;
+    this.Constant.hPosRange.y[1] = stageH - halfImgH;
+
+    //计算上侧区域图片排布位置的取值范围
+    this.Constant.vPosRange.topY[0] = -halfImgH;
+    this.Constant.vPosRange.topY[1] = halfStageH - halfImgH * 3;
+    this.Constant.vPosRange.x[0] = halfStageW - imgW;
+    this.Constant.vPosRange.x[1] = halfStageW;
+
+    this.rearrange(0)
+  },
+
   render() {
 
     let styleObj = {
@@ -192,7 +292,7 @@ let Stage = React.createClass({
     }
 
     let controllerUnits = [],
-      imgFigures = [];
+        imgFigures = [];
 
     imageDatas.forEach((value,index) => {
 
@@ -201,7 +301,10 @@ let Stage = React.createClass({
           pos: {
             left: 0,
             top: 0
-          }
+          },
+          rotate: 0,
+          isInverse: false,
+          isCenter: false
         }
       }
 
@@ -211,8 +314,12 @@ let Stage = React.createClass({
           ref={'imgFigure'+index}
           arrange={this.state.imgsArrangeArr[index]}
           key={index}
+          inverse={this.inverse(index)}
+          center={this.center(index)}
         />
       );
+
+      controllerUnits.push(<ControllerUnit/>)
     });
 
     return (
@@ -226,7 +333,7 @@ let Stage = React.createClass({
       </section>
     );
   }
-})
+});
 
 class AppComponent extends React.Component {
   render() {
@@ -236,8 +343,6 @@ class AppComponent extends React.Component {
   }
 }
 
-AppComponent.defaultProps = {
-
-};
+AppComponent.defaultProps = {};
 
 export default AppComponent;

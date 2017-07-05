@@ -1,5 +1,23 @@
 # webpack+react构建应用笔记
 
+## 引入模块
+
+### react
+
+该模块用于react基本命令
+
+```javascript
+  import React from 'react';
+```
+
+### react-dom
+
+该模块用于对dom进行操作
+
+```javascript
+  import reactDOM from 'react-dom';
+```
+
 ## loader相关
 
 ### autoprefixer-loader
@@ -9,6 +27,7 @@
 ### json-loader
 
 应用中需要使用json文件，因此引入json-loader处理json文件
+
 
 ## View Control Data
 
