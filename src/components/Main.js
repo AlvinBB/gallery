@@ -44,8 +44,8 @@ let ImgFigure = React.createClass({
 
     //如果图片的旋转角度有值并且不为0，添加旋转角度
     if(this.props.arrange.rotate) {
-      (['-moz-','-ms-','-webkit','']).forEach((value) => {
-        styleObj[value + 'transform'] =
+      (['MozTransform','msTransform','WebkitTransform','transform']).forEach((value) => {
+        styleObj[value] =
           `rotate(${this.props.arrange.rotate}deg)`;
       })
     }
@@ -81,13 +81,33 @@ let ImgFigure = React.createClass({
 let ControllerUnit = React.createClass({
 
   handleClick(e) {
+
+    if (this.props.arrange.isCenter) {
+      this.props.inverse();
+    } else {
+      this.props.center();
+    }
+
     e.preventDefault();
     e.stopPropagation();
   },
 
   render() {
+
+    let controllerUnitClassName = "controller-unit";
+
+    //如果对应的图片居中，则控制按钮居中状态
+    if (this.props.arrange.isCenter) {
+      controllerUnitClassName += " is-center";
+
+      //如果同时图片翻转
+      if (this.props.arrange.isInverse) {
+        controllerUnitClassName += " is-inverse"
+      }
+    }
+
     return (
-      <span className="controller-unit" onClick={this.handleClick}></span>
+      <span className={controllerUnitClassName} onClick={this.handleClick}></span>
     );
   }
 });
@@ -151,7 +171,7 @@ let Stage = React.createClass({
       vPosRangeX = vPosRange.x,
 
       imgsArrangeTopArr = [],
-      topImgNum = Math.ceil(Math.random() * 2), //取一个或者不取
+      topImgNum = Math.floor(Math.random() * 2), //取一个或者不取
 
       topImgSpliceIndex = 0,
 
@@ -319,7 +339,14 @@ let Stage = React.createClass({
         />
       );
 
-      controllerUnits.push(<ControllerUnit/>)
+      controllerUnits.push(
+        <ControllerUnit
+          arrange={this.state.imgsArrangeArr[index]}
+          inverse={this.inverse(index)}
+          center={this.center(index)}
+          key={index}
+        />
+      )
     });
 
     return (

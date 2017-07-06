@@ -79,7 +79,9 @@ html,body {
         background-color: #fff;
 
         box-sizing: border-box;
-        transform: rotateY(180deg);
+        transform: rotateY(180deg) translateZ(1px);
+
+        backface-visibility: hidden;
       }
     }
   }
@@ -110,6 +112,7 @@ html,body {
       border-radius: 50%;
 
       transform: scale(.5);
+      transition: transform .6s ease-in-out,background-color .3s;
 
       &.is-center {
         background-color: #888;
@@ -126,6 +129,12 @@ html,body {
 
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+        }
+
+        &.is-inverse{
+          background-color: #555;
+
+          transform: rotateY(180deg);
         }
       }
     }
