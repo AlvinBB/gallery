@@ -34,3 +34,23 @@
 ### 数据文件
 
 所需数据文件以json文件包装，放置在src/data下，保证数据视图分离
+
+## 最后部署
+
+### 部署到github
+
+- 把代码重新打包至dist，根据package.json配置执行以下命令
+
+````bash
+$ npm run clean
+$ npm run copy
+$ npm run dist
+````
+
+- 然后将代码提交到并创建分支
+
+````bash
+$ git add dist
+$ git commit -m "description"
+$ git subtree push --prefix=dist origin gh-pages
+````
